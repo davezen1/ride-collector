@@ -1,3 +1,7 @@
+[![Go Report Card](https://goreportcard.com/badge/davezen1/ride-collector)](https://goreportcard.com/report/davezen1/ride-collector)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/davezen1/ride-collector)
+![GitHub](https://img.shields.io/github/license/davezen1/ride-collector)
+
 # Ride Collector
 
 Initial project to find roller coaster ride information especially height from websites. Uses[Go Colly](http://go-colly.org/) for screen scraping. Eventually, will include writers such as CSV, Firebase.
