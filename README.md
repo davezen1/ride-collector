@@ -1,3 +1,4 @@
+![Go](https://github.com/davezen1/ride-collector/workflows/Go/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/davezen1/ride-collector)](https://goreportcard.com/report/davezen1/ride-collector)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/davezen1/ride-collector)
 ![GitHub](https://img.shields.io/github/license/davezen1/ride-collector)
