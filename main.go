@@ -43,7 +43,7 @@ func buschgardens(c colly.Collector) {
 			image := e.Request.URL.String() + el.ChildAttr("span > a > img", "src")
 			name := el.ChildText("div > h2 > a")
 			shortDescription := el.ChildText("div > p")
-			tags := el.ChildTexts("div > ul > li")
+			tags := el.ChildText("div > ul > li")
 
 			if name != "" {
 				log.Printf("name %v sdesc %v \n", name, shortDescription)
