@@ -22,3 +22,22 @@ go run main.go
 - tests are a good thing
 - add a writer to csv
 - add a writer to firebase
+- add a writer to json
+
+Sample JSON output (snipper)
+
+```
+{
+        "park": "Busch Gardens Williamsburg",
+        "name": "Apollo's Chariot",
+        "description": "A guest favorite. Hold on as this coaster drops from 210 feet!",
+        "image": "https://buschgardens.com/williamsburg/rides//williamsburg/-/media/busch-gardens-williamsburg/images/rides/apollos-chariot/listing-images/apollos-chariot.ashx?version=1_201905015448",
+        "height": "52",
+        "url": "https://buschgardens.com/williamsburg/roller-coasters/apollos-chariot/",
+        "tags": [
+            "High Thrill",
+            "Roller Coaster"
+        ]
+    },
+```
+

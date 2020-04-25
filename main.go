@@ -1,20 +1,25 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 )
 
 //Ride details
 type Ride struct {
-	name, shortDescription, imageURL, heightRequirementInInches, rideURLstring, tags string
+	Park                      string   `json:"park"`
+	Name                      string   `json:"name"`
+	ShortDescription          string   `json:"description"`
+	ImageURL                  string   `json:"image"`
+	HeightRequirementInInches string   `json:"height"`
+	RideURL                   string   `json:"url"`
+	Tags                      []string `json:"tags"`
 }
 
 //Rides represents slice of Ride structs
@@ -22,7 +27,8 @@ type Rides []Ride
 
 func buschgardens(c colly.Collector) ([]Ride, [][]string) {
 	var ridesList Rides
-	var ridesSlices = [][]string{{"name", "image", "description", "tags", "height"}}
+	var ridesSlices = [][]string{{"name", "image", "description", "tags", "height", "url"}}
+	parkName := "Busch Gardens Williamsburg"
 
 	c.OnHTML("#page-content > div > div > ul", func(e *colly.HTMLElement) {
 
@@ -31,7 +37,7 @@ func buschgardens(c colly.Collector) ([]Ride, [][]string) {
 			image := e.Request.URL.String() + el.ChildAttr("span > a > img", "src")
 			name := el.ChildText("div > h2 > a")
 			shortDescription := el.ChildText("div > p")
-			tags := strings.Join(el.ChildTexts("div > ul > li"), ",")
+			tags := el.ChildTexts("div > ul > li")
 
 			if name != "" {
 				//follow link
@@ -41,9 +47,9 @@ func buschgardens(c colly.Collector) ([]Ride, [][]string) {
 					height := e2.ChildText("#page-content > div.container > div > div.col-sm-8 > div > ul > li:nth-child(1) > dl > dd")
 					height = strings.TrimSuffix(height, "\"")
 
-					ridesList = append(ridesList, Ride{name: name, imageURL: image, shortDescription: shortDescription, tags: tags, heightRequirementInInches: height})
+					ridesList = append(ridesList, Ride{Park: parkName, Name: name, ImageURL: image, ShortDescription: shortDescription, Tags: tags, HeightRequirementInInches: height, RideURL: rideURL})
 
-					ridesSlices = append(ridesSlices, []string{name, image, shortDescription, tags, height})
+					ridesSlices = append(ridesSlices, []string{name, image, shortDescription, strings.Join(tags, "|"), height, rideURL})
 				})
 
 				c2.Visit(rideURL)
@@ -70,39 +76,24 @@ func main() {
 	})
 
 	//make generic with interface to collect ride info (extract) and write
-	bgRidesList, bgRidesSlices := buschgardens(*c)
+	bgRidesList, _ := buschgardens(*c)
 
-	write(bgRidesList, bgRidesSlices)
+	write(bgRidesList)
 }
 
-//experimenting with multidimensional slices and structs writing to csv
-func write(r Rides, rs [][]string) {
-	log.Println(r)
-	ridesJSON, err := json.Marshal(r)
+func write(r Rides) {
+
+	var fileName strings.Builder
+	ridesJSON, err := json.MarshalIndent(r, "", "    ")
+
 	if err != nil {
 		log.Fatal("Cannot encode to JSON ", err)
 	}
-	// file, _ := json.MarshalIndent(r, "", " ")
+	fmt.Println(string(ridesJSON))
 
-	_ = ioutil.WriteFile("bg.json", ridesJSON, 0644)
+	fileName.WriteString("rides-")
+	fileName.WriteString(time.Now().Format("20060102150405"))
+	fileName.WriteString(".json")
 
-	//write using [][]string
-	file, err := os.Create("bgslice.csv")
-	checkError("Cannot create file", err)
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	for _, value := range rs {
-		err := writer.Write(value)
-		checkError("Cannot write to file", err)
-	}
-
-}
-
-func checkError(message string, err error) {
-	if err != nil {
-		log.Fatal(message, err)
-	}
+	_ = ioutil.WriteFile(fileName.String(), ridesJSON, 0644)
 }
