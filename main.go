@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -25,9 +27,11 @@ type Ride struct {
 //Rides represents slice of Ride structs
 type Rides []Ride
 
-func buschgardens(c colly.Collector) ([]Ride, [][]string) {
+// POC - most likely websites will contain a single page with all info
+// OR we will have to go to each ride page to get info
+// this could be made generic with Config args for park, url, query selectors for each attribute
+func buschgardens(c colly.Collector) []Ride {
 	var ridesList Rides
-	var ridesSlices = [][]string{{"name", "image", "description", "tags", "height", "url"}}
 	parkName := "Busch Gardens Williamsburg"
 
 	c.OnHTML("#page-content > div > div > ul", func(e *colly.HTMLElement) {
@@ -48,12 +52,9 @@ func buschgardens(c colly.Collector) ([]Ride, [][]string) {
 					height = strings.TrimSuffix(height, "\"")
 
 					ridesList = append(ridesList, Ride{Park: parkName, Name: name, ImageURL: image, ShortDescription: shortDescription, Tags: tags, HeightRequirementInInches: height, RideURL: rideURL})
-
-					ridesSlices = append(ridesSlices, []string{name, image, shortDescription, strings.Join(tags, "|"), height, rideURL})
 				})
 
 				c2.Visit(rideURL)
-
 			}
 
 		})
@@ -61,7 +62,7 @@ func buschgardens(c colly.Collector) ([]Ride, [][]string) {
 	})
 	c.Visit("https://buschgardens.com/williamsburg/rides")
 
-	return ridesList, ridesSlices
+	return ridesList
 }
 
 func main() {
@@ -76,12 +77,13 @@ func main() {
 	})
 
 	//make generic with interface to collect ride info (extract) and write
-	bgRidesList, _ := buschgardens(*c)
+	bgRidesList := buschgardens(*c)
 
-	write(bgRidesList)
+	filenameJSON := write(bgRidesList)
+	writeCSV(filenameJSON)
 }
 
-func write(r Rides) {
+func write(r Rides) string {
 
 	var fileName strings.Builder
 	ridesJSON, err := json.MarshalIndent(r, "", "    ")
@@ -96,4 +98,51 @@ func write(r Rides) {
 	fileName.WriteString(".json")
 
 	_ = ioutil.WriteFile(fileName.String(), ridesJSON, 0644)
+
+	return fileName.String()
+}
+
+func writeCSV(f string) {
+
+	jsonDataFromFile, err := ioutil.ReadFile(f)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Unmarshal JSON data
+	var jsonData []Ride
+	err = json.Unmarshal([]byte(jsonDataFromFile), &jsonData)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	csvFile, err := os.Create("./rides.csv")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+
+	headerRow := []string{"park", "name", "description", "image", "url", "height", "tags"}
+
+	writer.Write(headerRow)
+
+	for _, ride := range jsonData {
+		var row []string
+		row = append(row, ride.Park)
+		row = append(row, ride.Name)
+		row = append(row, ride.ShortDescription)
+		row = append(row, ride.ImageURL)
+		row = append(row, ride.RideURL)
+		row = append(row, ride.HeightRequirementInInches)
+		row = append(row, strings.Join(ride.Tags, " "))
+		writer.Write(row)
+	}
+
+	// remember to flush!
+	writer.Flush()
 }
